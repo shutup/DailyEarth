@@ -27,6 +27,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 import rx.Observable;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -46,11 +47,21 @@ public class MainActivity extends AppCompatActivity implements Constants {
     private int screenW = 0;
     private int screenH = 0;
 
+    Himawari8API himawari8API = null;
+    private Subscription mSubscription = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
+
+        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                setLatestImage(himawari8API);
+            }
+        });
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
@@ -68,9 +79,13 @@ public class MainActivity extends AppCompatActivity implements Constants {
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .build();
 
-        final Himawari8API himawari8API = retrofit.create(Himawari8API.class);
+        himawari8API = retrofit.create(Himawari8API.class);
 
-        himawari8API.getLatestTime(LatestStr)
+        setLatestImage(himawari8API);
+    }
+
+    private void setLatestImage(final Himawari8API himawari8API) {
+        mSubscription = himawari8API.getLatestTime(LatestStr)
                 .subscribeOn(Schedulers.io())
                 .asObservable()
                 .map(new Func1<LatestHimawari8ImageInfo, String>() {
@@ -133,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
                             mWallpaperManager.clear();
                             mWallpaperManager.suggestDesiredDimensions(screenW, screenH);
                             mWallpaperManager.setBitmap(bitmaps.get(1));
+                            mSwipeRefresh.setRefreshing(false);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -141,7 +157,18 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     @Override
                     public void call(Throwable throwable) {
                         if (BuildConfig.DEBUG) Log.d(TAG, "throwable:" + throwable);
+                            mSwipeRefresh.setRefreshing(false);
                     }
                 });
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (BuildConfig.DEBUG) Log.d("MainActivity", "onDestroy");
+        if (mSubscription !=null && !mSubscription.isUnsubscribed()) {
+            mSubscription.unsubscribe();
+        }
     }
 }
