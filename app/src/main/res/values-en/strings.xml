@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">今日地球</string>
+    <string name="app_name">DailyEarth</string>
     <string name="originTimePattern">yyyy-MM-dd HH:mm:ss</string>
     <string name="dstTimePatttern">yyyy/MM/dd/HHmmss</string>
 </resources>
