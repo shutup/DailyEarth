@@ -5,13 +5,17 @@
 ##以实现功能
 * 最新地球图片的获取
 * 壁纸的设置
+* 定时自动更新
 
 ##待实现功能
-* 定时自动更新
+* ~~定时自动更新~~
 * 优化更新逻辑
 
 ##截图
-![screen](https://github.com/shutup/DailyEarth/blob/master/device-2016-08-13-224047.png)
+![screen](https://github.com/shutup/DailyEarth/blob/master/device-2016-08-14-081422.png)
 ##使用的技术
 * RXJava
 * Retrofit 2.0
+* Service
+* Handler
+* AlarmManager
