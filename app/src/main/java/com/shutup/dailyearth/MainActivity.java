@@ -4,12 +4,14 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.WallpaperManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
@@ -54,13 +56,19 @@ public class MainActivity extends AppCompatActivity implements Constants {
     Himawari8API himawari8API = null;
     private Subscription mSubscription = null;
 
+    static boolean isRequest = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
 
-        startService(new Intent(this,MyDaemonService.class));
+
+        /*
+            start daemon service
+         */
+        startService(new Intent(this, MyDaemonService.class));
 
         /*
             AlarmManager.ELAPSED_REALTIME_WAKEUP
@@ -77,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
         /*
             AlarmManager.RTC_WAKEUP
          */
-        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         //get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 30 seconds to the calendar object
@@ -86,13 +94,15 @@ public class MainActivity extends AppCompatActivity implements Constants {
         Intent intent = new Intent(this, MyDaemonService.class);
         intent.setAction(UpdateWallPaperAction);
         PendingIntent sender = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),interval, sender);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
 
 
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                setLatestImage(himawari8API);
+                if (!isRequest) {
+                    setLatestImage(himawari8API);
+                }
             }
         });
 
@@ -118,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
     }
 
     private void setLatestImage(final Himawari8API himawari8API) {
+        isRequest = true;
         mSubscription = himawari8API.getLatestTime(LatestStr)
                 .subscribeOn(Schedulers.io())
                 .asObservable()
@@ -141,13 +152,20 @@ public class MainActivity extends AppCompatActivity implements Constants {
                         }
                         simpleDateFormat = new SimpleDateFormat(getString(R.string.dstTimePatttern));
                         String time = simpleDateFormat.format(date);
-                        for (int row = 0; row < scale; row++) {
-                            for (int col = 0; col < scale; col++) {
-                                Observable<ResponseBody> observable = himawari8API.getImage(scale, time, row, col).asObservable();
-                                return observable;
+                        String lastTime = getPreference(LastUpdateTime, "");
+                        if (time.equalsIgnoreCase(lastTime)) {
+                            if (BuildConfig.DEBUG) Log.d(TAG, "no need to update");
+                        }else {
+                            if (BuildConfig.DEBUG) Log.d(TAG, "need to update");
+                            savePreference(LastUpdateTime, time);
+                            for (int row = 0; row < scale; row++) {
+                                for (int col = 0; col < scale; col++) {
+                                    Observable<ResponseBody> observable = himawari8API.getImage(scale, time, row, col).asObservable();
+                                    return observable;
+                                }
                             }
                         }
-                        return null;
+                        return Observable.empty();
                     }
                 })
                 .map(new Func1<ResponseBody, List<Bitmap>>() {
@@ -181,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
 //                            mWallpaperManager.clear();
                             mWallpaperManager.suggestDesiredDimensions(screenW, screenH);
                             mWallpaperManager.setBitmap(bitmaps.get(1));
-                            mSwipeRefresh.setRefreshing(false);
+                            reset();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -189,19 +207,36 @@ public class MainActivity extends AppCompatActivity implements Constants {
                 }, new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
+                        reset();
                         if (BuildConfig.DEBUG) Log.d(TAG, "throwable:" + throwable);
-                            mSwipeRefresh.setRefreshing(false);
                     }
                 });
+    }
+
+    private void reset() {
+        mSwipeRefresh.setRefreshing(false);
+        isRequest = false;
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (BuildConfig.DEBUG) Log.d("MainActivity", "onDestroy");
-        if (mSubscription !=null && !mSubscription.isUnsubscribed()) {
+        if (BuildConfig.DEBUG) Log.d(TAG, "onDestroy");
+        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
             mSubscription.unsubscribe();
         }
+    }
+
+    private String getPreference(String key,String value) {
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return mSharedPreferences.getString(key, value);
+    }
+
+    private void savePreference(String key, String value) {
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putString(key, value);
+        editor.commit();
     }
 }

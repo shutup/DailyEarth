@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.WallpaperManager;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -14,6 +15,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.DisplayMetrics;
@@ -54,7 +56,6 @@ public class MyDaemonService extends Service implements Constants {
     public MyDaemonService() {
         if (BuildConfig.DEBUG) Log.d(TAG, "MySetWallPaperIntentService");
 
-
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(Himawari8URL)
                 .addConverterFactory(GsonConverterFactory.create())
@@ -62,8 +63,6 @@ public class MyDaemonService extends Service implements Constants {
                 .build();
 
         himawari8API = retrofit.create(Himawari8API.class);
-
-
     }
 
     @Override
@@ -88,9 +87,9 @@ public class MyDaemonService extends Service implements Constants {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this.getApplicationContext());
         Intent nfIntent = new Intent(this, MainActivity.class);
         builder.setContentIntent(PendingIntent.getActivity(this, 0, nfIntent, 0))
-                .setLargeIcon(BitmapFactory.decodeResource(this.getResources(), R.drawable.earth))
-                .setContentTitle(getString(R.string.app_name))
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(),R.drawable.earth))
                 .setSmallIcon(R.drawable.earth)
+                .setContentTitle(getString(R.string.app_name))
                 .setContentText("")
                 .setWhen(System.currentTimeMillis());
         Notification notification = builder.build();
@@ -148,13 +147,20 @@ public class MyDaemonService extends Service implements Constants {
                         }
                         simpleDateFormat = new SimpleDateFormat(getString(R.string.dstTimePatttern));
                         String time = simpleDateFormat.format(date);
-                        for (int row = 0; row < scale; row++) {
-                            for (int col = 0; col < scale; col++) {
-                                Observable<ResponseBody> observable = himawari8API.getImage(scale, time, row, col).asObservable();
-                                return observable;
+                        String lastTime = getPreference(LastUpdateTime, "");
+                        if (time.equalsIgnoreCase(lastTime)) {
+                            if (BuildConfig.DEBUG) Log.d(TAG, "no need to update");
+                        }else {
+                            if (BuildConfig.DEBUG) Log.d(TAG, "need to update");
+                            savePreference(LastUpdateTime, time);
+                            for (int row = 0; row < scale; row++) {
+                                for (int col = 0; col < scale; col++) {
+                                    Observable<ResponseBody> observable = himawari8API.getImage(scale, time, row, col).asObservable();
+                                    return observable;
+                                }
                             }
                         }
-                        return null;
+                        return Observable.empty();
                     }
                 })
                 .map(new Func1<ResponseBody, List<Bitmap>>() {
@@ -216,6 +222,18 @@ public class MyDaemonService extends Service implements Constants {
         } catch (Throwable e) {
             e.printStackTrace();
         }
+    }
+
+    private String getPreference(String key,String value) {
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return mSharedPreferences.getString(key, value);
+    }
+
+    private void savePreference(String key, String value) {
+        SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        editor.putString(key, value);
+        editor.commit();
     }
 
 }

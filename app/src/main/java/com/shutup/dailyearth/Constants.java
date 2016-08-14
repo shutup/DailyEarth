@@ -8,10 +8,12 @@ public interface Constants {
     String LatestStr = "latest";
 
     int WallPaperPadding = 50;
-    int NotificationId = 456;
+    int NotificationId = 1;
     String UpdateWallPaperAction = "com.shutup.UPDATE_WALL_PAPER";
 
     String ScreenHeightKey = "ScreenHeightKey";
     String ScreenWidthKey = "ScreenWidthKey";
     String EarthScale = "EarthScale";
+
+    String LastUpdateTime = "LastUpdateTime";
 }

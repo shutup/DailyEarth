@@ -7,6 +7,7 @@
     tools:context="com.shutup.dailyearth.MainActivity">
 
     <ImageView
+        android:src="@drawable/preview_placeholder"
         android:padding="20dp"
         android:background="@android:color/black"
         android:scaleType="fitCenter"
