@@ -1,7 +1,6 @@
 package com.shutup.dailyearth;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
+import android.app.IntentService;
 import android.app.WallpaperManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -9,23 +8,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Bundle;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.widget.ImageView;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import butterknife.ButterKnife;
-import butterknife.InjectView;
 import okhttp3.ResponseBody;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
@@ -37,73 +29,22 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
-public class MainActivity extends AppCompatActivity implements Constants {
+/**
+ * Created by shutup on 16/8/14.
+ */
+public class MySetWallPaperIntentService extends IntentService implements Constants {
 
-    @InjectView(R.id.previewImage)
-    ImageView mPreviewImage;
-    @InjectView(R.id.swipeRefresh)
-    SwipeRefreshLayout mSwipeRefresh;
-
+    private WallpaperManager mWallpaperManager = null;
+    private Himawari8API himawari8API = null;
+    private Subscription mSubscription = null;
     private String TAG = this.getClass().getSimpleName();
     private int scale = 1;
-    private WallpaperManager mWallpaperManager = null;
-    private int padding = 50;
     private int screenW = 0;
     private int screenH = 0;
 
-    Himawari8API himawari8API = null;
-    private Subscription mSubscription = null;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        ButterKnife.inject(this);
-
-        startService(new Intent(this,MyDaemonService.class));
-
-        /*
-            AlarmManager.ELAPSED_REALTIME_WAKEUP
-         */
-//        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
-//        Intent serviceIntent = new Intent(this, MySetWallPaperIntentService.class) ; //启动service
-//        PendingIntent pendingIntent = PendingIntent.getService(this,0,serviceIntent,0) ;
-//        Intent broadIntent = new Intent(this, AlarmListener.class) ; //启动service
-//        PendingIntent pendingIntent = PendingIntent.getService(this,0,broadIntent,PendingIntent.FLAG_UPDATE_CURRENT) ;
-//        long triggerTime =  System.currentTimeMillis() ; //每隔50秒触发一次
-//        long interval = 5* 1000;
-//        alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerTime,interval,pendingIntent);
-
-        /*
-            AlarmManager.RTC_WAKEUP
-         */
-        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
-        //get a Calendar object with current time
-        Calendar cal = Calendar.getInstance();
-        // add 30 seconds to the calendar object
-        cal.add(Calendar.SECOND, 10);
-        long interval = 10 * 60 * 1000;
-        Intent intent = new Intent(this, MyDaemonService.class);
-        intent.setAction(UpdateWallPaperAction);
-        PendingIntent sender = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(),interval, sender);
-
-
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                setLatestImage(himawari8API);
-            }
-        });
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenW = displayMetrics.widthPixels;
-        screenH = displayMetrics.heightPixels;
-
-        if (BuildConfig.DEBUG) Log.d(TAG, "screenW:" + screenW);
-        if (BuildConfig.DEBUG) Log.d(TAG, "screenH:" + screenH);
-
+    public MySetWallPaperIntentService() {
+        super("MySetWallPaperIntentService");
+        if (BuildConfig.DEBUG) Log.d("MySetWallPaperIntentSer", "MySetWallPaperIntentService");
         mWallpaperManager = WallpaperManager.getInstance(this.getApplicationContext());
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -114,7 +55,21 @@ public class MainActivity extends AppCompatActivity implements Constants {
 
         himawari8API = retrofit.create(Himawari8API.class);
 
-        setLatestImage(himawari8API);
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        screenH = displayMetrics.heightPixels;
+        screenW = displayMetrics.widthPixels;
+        if (BuildConfig.DEBUG) Log.d("MySetWallPaperIntentSer", "screenH:" + screenH);
+        if (BuildConfig.DEBUG) Log.d("MySetWallPaperIntentSer", "screenW:" + screenW);
+    }
+
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        if (BuildConfig.DEBUG) Log.d("MySetWallPaperIntentSer", "onHandleIntent");
+        if (intent.getAction().equalsIgnoreCase(UpdateWallPaperAction)) {
+            setLatestImage(himawari8API);
+            if (BuildConfig.DEBUG) Log.d("MySetWallPaperIntentSer", "onHandleIntent");
+        }
     }
 
     private void setLatestImage(final Himawari8API himawari8API) {
@@ -154,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     @Override
                     public List<Bitmap> call(ResponseBody responseBody) {
                         Bitmap bitmap = BitmapFactory.decodeStream(responseBody.byteStream());
-                        Bitmap bitmapResized = Bitmap.createScaledBitmap(bitmap, screenW - padding, screenW - padding, true);
+                        Bitmap bitmapResized = Bitmap.createScaledBitmap(bitmap, screenW - WallPaperPadding, screenW - WallPaperPadding, true);
                         int width = bitmapResized.getWidth();
                         int height = bitmapResized.getHeight();
                         int left = (screenW - width) / 2;
@@ -177,11 +132,11 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     @Override
                     public void call(List<Bitmap> bitmaps) {
                         try {
-                            mPreviewImage.setImageBitmap(bitmaps.get(0));
-//                            mWallpaperManager.clear();
+                            mWallpaperManager.clear();
                             mWallpaperManager.suggestDesiredDimensions(screenW, screenH);
                             mWallpaperManager.setBitmap(bitmaps.get(1));
-                            mSwipeRefresh.setRefreshing(false);
+                            if (BuildConfig.DEBUG)
+                                Log.d("MySetWallPaperIntentSer", "setWallPaperSuccess");
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -190,18 +145,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     @Override
                     public void call(Throwable throwable) {
                         if (BuildConfig.DEBUG) Log.d(TAG, "throwable:" + throwable);
-                            mSwipeRefresh.setRefreshing(false);
                     }
                 });
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (BuildConfig.DEBUG) Log.d("MainActivity", "onDestroy");
-        if (mSubscription !=null && !mSubscription.isUnsubscribed()) {
-            mSubscription.unsubscribe();
-        }
     }
 }
