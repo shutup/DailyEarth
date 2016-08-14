@@ -11,13 +11,19 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,6 +55,16 @@ public class MainActivity extends AppCompatActivity implements Constants {
     ImageView mPreviewImage;
     @InjectView(R.id.swipeRefresh)
     SwipeRefreshLayout mSwipeRefresh;
+    @InjectView(R.id.toolbar_title)
+    TextView mToolbarTitle;
+    @InjectView(R.id.toolbar)
+    Toolbar mToolbar;
+    @InjectView(R.id.drawer_view)
+    LinearLayout mDrawerView;
+    @InjectView(R.id.drawer)
+    DrawerLayout mDrawer;
+    @InjectView(R.id.drawer_menu_list)
+    ListView mDrawerMenuList;
 
     private String TAG = this.getClass().getSimpleName();
     private int scale = 1;
@@ -68,69 +84,21 @@ public class MainActivity extends AppCompatActivity implements Constants {
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
 
-        Bitmap bitmap = getLastLatestImagefromLocal();
-        if (bitmap != null) {
-            mPreviewImage.setImageBitmap(bitmap);
-        }
-        /*
-            start daemon service
-         */
-//        startService(new Intent(this, MyDaemonService.class));
-        /*
-            AlarmManager.ELAPSED_REALTIME_WAKEUP
-         */
-//        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
-//        Intent broadIntent = new Intent(this, MyDaemonService.class) ; //启动service
-//        PendingIntent pendingIntent = PendingIntent.getService(this,0,broadIntent,PendingIntent.FLAG_UPDATE_CURRENT) ;
-//        long triggerTime =  SystemClock.elapsedRealtime(); //每隔50秒触发一次
-//        long interval = 50* 1000;
-//        alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerTime,interval,pendingIntent);
+        initToolBar();
 
-        /*
-            AlarmManager.RTC_WAKEUP
-         */
-        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        //get a Calendar object with current time
-        Calendar cal = Calendar.getInstance();
-        // add 30 seconds to the calendar object
-        cal.add(Calendar.SECOND, 60);
-        long interval = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
-        Intent intent = new Intent(this, MyDaemonService.class);
-        intent.setAction(UpdateWallPaperAction);
-        PendingIntent sender = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
-        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
+        initPreviewImage();
 
+        initAlarmManager();
 
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                if (!isRequest) {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "beginRequest");
-                    setLatestImage(himawari8API);
-                }else {
-                    if (BuildConfig.DEBUG) Log.d(TAG, "isRequesting");
-                }
-            }
-        });
+        initDrawerLayout();
 
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        screenW = displayMetrics.widthPixels;
-        screenH = displayMetrics.heightPixels;
+        initSwipeRefreshEvent();
 
-        if (BuildConfig.DEBUG) Log.d(TAG, "screenW:" + screenW);
-        if (BuildConfig.DEBUG) Log.d(TAG, "screenH:" + screenH);
+        initScreenInfo();
 
-        mWallpaperManager = WallpaperManager.getInstance(this.getApplicationContext());
+        initWallPaperManager();
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(Himawari8URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .build();
-
-        himawari8API = retrofit.create(Himawari8API.class);
+        initRetrofitService();
 
         setLatestImage(himawari8API);
     }
@@ -146,6 +114,100 @@ public class MainActivity extends AppCompatActivity implements Constants {
             start daemon service
          */
         startService(new Intent(this, MyDaemonService.class));
+    }
+
+    private void initToolBar() {
+        setSupportActionBar(mToolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("");
+        }
+        mToolbarTitle.setText(R.string.app_name);
+    }
+
+    private void initWallPaperManager() {
+        mWallpaperManager = WallpaperManager.getInstance(this.getApplicationContext());
+    }
+
+    private void initScreenInfo() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        screenW = displayMetrics.widthPixels;
+        screenH = displayMetrics.heightPixels;
+
+        if (BuildConfig.DEBUG) Log.d(TAG, "screenW:" + screenW);
+        if (BuildConfig.DEBUG) Log.d(TAG, "screenH:" + screenH);
+    }
+
+    private void initSwipeRefreshEvent() {
+        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                if (!isRequest) {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "beginRequest");
+                    setLatestImage(himawari8API);
+                } else {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "isRequesting");
+                }
+            }
+        });
+    }
+
+    private void initRetrofitService() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(Himawari8URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .build();
+
+        himawari8API = retrofit.create(Himawari8API.class);
+    }
+
+    private void initDrawerLayout() {
+        //set drawer width
+        Display display = getWindowManager().getDefaultDisplay();
+        DrawerLayout.LayoutParams params = (DrawerLayout.LayoutParams) mDrawerView.getLayoutParams();
+        params.width = (int) (0.74 * display.getWidth());
+        mDrawerView.setLayoutParams(params);
+        //
+        // init drawer toggle
+        ActionBarDrawerToggle mDrawerToggle = new ActionBarDrawerToggle(this, mDrawer, mToolbar, R.string.drawer_open, R.string.drawer_close);
+        mDrawerToggle.syncState();
+
+        mDrawer.addDrawerListener(mDrawerToggle);
+    }
+
+    private void initAlarmManager() {
+        /*
+            AlarmManager.ELAPSED_REALTIME_WAKEUP
+         */
+//        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
+//        Intent broadIntent = new Intent(this, MyDaemonService.class) ; //启动service
+//        PendingIntent pendingIntent = PendingIntent.getService(this,0,broadIntent,PendingIntent.FLAG_UPDATE_CURRENT) ;
+//        long triggerTime =  SystemClock.elapsedRealtime(); //每隔50秒触发一次
+//        long interval = 50* 1000;
+//        alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerTime,interval,pendingIntent);
+    /*
+        AlarmManager.RTC_WAKEUP
+     */
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        //get a Calendar object with current time
+        Calendar cal = Calendar.getInstance();
+        // add 30 seconds to the calendar object
+        cal.add(Calendar.SECOND, 60);
+        long interval = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
+        Intent intent = new Intent(this, MyDaemonService.class);
+        intent.setAction(UpdateWallPaperAction);
+        PendingIntent sender = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
+        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
+    }
+
+    private void initPreviewImage() {
+        Bitmap bitmap = getLastLatestImagefromLocal();
+        if (bitmap != null) {
+            mPreviewImage.setImageBitmap(bitmap);
+        }
     }
 
     private void setLatestImage(final Himawari8API himawari8API) {

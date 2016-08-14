@@ -32,6 +32,11 @@
             android:enabled="true"
             android:exported="false">
         </receiver>
+
+        <activity android:name=".AboutActivity">
+        </activity>
+        <activity android:name=".DonateActivity">
+        </activity>
     </application>
 
 </manifest>

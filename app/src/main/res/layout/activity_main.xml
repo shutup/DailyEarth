@@ -1,26 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+
+<android.support.v4.widget.DrawerLayout
+    android:id="@+id/drawer"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.shutup.dailyearth.MainActivity">
+    android:layout_below="@+id/toolbar">
 
-    <ImageView
-        android:src="@drawable/preview_placeholder"
-        android:padding="20dp"
-        android:background="@android:color/black"
-        android:scaleType="fitCenter"
-        android:id="@+id/previewImage"
+    <!-- Content -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-    <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefresh"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <ListView
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <include layout="@layout/toolbar"/>
+
+        <android.support.v4.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"></ListView>
-    </android.support.v4.widget.SwipeRefreshLayout>
+            android:layout_height="match_parent">
+            <ImageView
+                android:id="@+id/previewImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/black"
+                android:padding="20dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/preview_placeholder"/>
+            <ListView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"></ListView>
+        </android.support.v4.widget.SwipeRefreshLayout>
 
-</RelativeLayout>
+    </LinearLayout>
+    <!-- Side Drawer -->
+    <LinearLayout
+        android:id="@+id/drawer_view"
+        android:layout_width="@dimen/drawer_width"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#FFFFFF"
+        android:clickable="true"
+        android:orientation="vertical">
+
+
+        <ListView
+            android:id="@+id/drawer_menu_list"
+            android:divider="@android:color/transparent"
+            android:dividerHeight="@dimen/menu_list_divider_height"
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp">
+
+        </ListView>
+    </LinearLayout>
+</android.support.v4.widget.DrawerLayout>
