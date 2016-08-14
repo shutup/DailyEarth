@@ -18,8 +18,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -187,6 +189,7 @@ public class MyDaemonService extends Service implements Constants {
                             mWallpaperManager.setBitmap(bitmaps.get(1));
                             if (BuildConfig.DEBUG)
                                 Log.d(TAG, "setWallPaperSuccess");
+//                            SetLockWallPaper(mWallpaperManager, bitmaps.get(1));
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -197,6 +200,22 @@ public class MyDaemonService extends Service implements Constants {
                         if (BuildConfig.DEBUG) Log.d(TAG, "throwable:" + throwable);
                     }
                 });
+    }
+
+    /*
+        目前没有通用的方式来修改锁屏图片
+     */
+    private void SetLockWallPaper(WallpaperManager wallpaperManager,Bitmap bitmap) {
+        try {
+            Class class1 = wallpaperManager.getClass();//获取类名
+            Method setWallPaperMethod = class1.getMethod("setBitmapToLockWallpaper", Bitmap.class);
+            //获取设置锁屏壁纸的函数
+            setWallPaperMethod.invoke(wallpaperManager, bitmap);
+            //调用锁屏壁纸的函数，并指定壁纸的路径imageFilesPath
+            if (BuildConfig.DEBUG) Log.d("MyDaemonService", "setLockScreenPaperSuccess");
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
 }
