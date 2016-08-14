@@ -20,8 +20,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
@@ -44,7 +46,7 @@ import rx.schedulers.Schedulers;
 public class MyDaemonService extends Service implements Constants {
 
     private String TAG = this.getClass().getSimpleName();
-    
+
     private Handler handler = null;
     private WallpaperManager mWallpaperManager = null;
     private Himawari8API himawari8API = null;
@@ -52,7 +54,7 @@ public class MyDaemonService extends Service implements Constants {
     private int scale = 1;
     private int screenW = 0;
     private int screenH = 0;
-    
+
     public MyDaemonService() {
         if (BuildConfig.DEBUG) Log.d(TAG, "MySetWallPaperIntentService");
 
@@ -68,7 +70,7 @@ public class MyDaemonService extends Service implements Constants {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (BuildConfig.DEBUG) Log.d("MyDaemonService", "onCreate");
+        if (BuildConfig.DEBUG) Log.d(TAG, "onCreate");
         mWallpaperManager = WallpaperManager.getInstance(this.getApplicationContext());
         DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
         screenH = displayMetrics.heightPixels;
@@ -78,23 +80,23 @@ public class MyDaemonService extends Service implements Constants {
 
         HandlerThread handlerThread = new HandlerThread("MyDaemonServiceThread");
         handlerThread.start();
-        handler = new Handler(handlerThread.getLooper(),new MyHandlerCallback());
+        handler = new Handler(handlerThread.getLooper(), new MyHandlerCallback());
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (BuildConfig.DEBUG) Log.d("MyDaemonService", "onStartCommand");
+        if (BuildConfig.DEBUG) Log.d(TAG, "onStartCommand");
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this.getApplicationContext());
         Intent nfIntent = new Intent(this, MainActivity.class);
         builder.setContentIntent(PendingIntent.getActivity(this, 0, nfIntent, 0))
-                .setLargeIcon(BitmapFactory.decodeResource(getResources(),R.drawable.earth))
+                .setLargeIcon(BitmapFactory.decodeResource(getResources(), R.drawable.earth))
                 .setSmallIcon(R.drawable.earth)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText("")
                 .setWhen(System.currentTimeMillis());
         Notification notification = builder.build();
         startForeground(NotificationId, notification);
-        if (handler!=null) {
+        if (handler != null) {
             Message message = handler.obtainMessage();
             message.obj = UpdateWallPaperAction;
             handler.sendMessage(message);
@@ -105,7 +107,7 @@ public class MyDaemonService extends Service implements Constants {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        if (BuildConfig.DEBUG) Log.d("MyDaemonService", "onBind");
+        if (BuildConfig.DEBUG) Log.d(TAG, "onBind");
         return null;
     }
 
@@ -150,7 +152,7 @@ public class MyDaemonService extends Service implements Constants {
                         String lastTime = getPreference(LastUpdateTime, "");
                         if (time.equalsIgnoreCase(lastTime)) {
                             if (BuildConfig.DEBUG) Log.d(TAG, "no need to update");
-                        }else {
+                        } else {
                             if (BuildConfig.DEBUG) Log.d(TAG, "need to update");
                             savePreference(LastUpdateTime, time);
                             for (int row = 0; row < scale; row++) {
@@ -190,9 +192,9 @@ public class MyDaemonService extends Service implements Constants {
                     @Override
                     public void call(List<Bitmap> bitmaps) {
                         try {
-//                            mWallpaperManager.clear();
                             mWallpaperManager.suggestDesiredDimensions(screenW, screenH);
                             mWallpaperManager.setBitmap(bitmaps.get(1));
+                            saveLatestImage2Local(bitmaps.get(0));
                             if (BuildConfig.DEBUG)
                                 Log.d(TAG, "setWallPaperSuccess");
 //                            SetLockWallPaper(mWallpaperManager, bitmaps.get(1));
@@ -211,20 +213,20 @@ public class MyDaemonService extends Service implements Constants {
     /*
         目前没有通用的方式来修改锁屏图片
      */
-    private void SetLockWallPaper(WallpaperManager wallpaperManager,Bitmap bitmap) {
+    private void SetLockWallPaper(WallpaperManager wallpaperManager, Bitmap bitmap) {
         try {
             Class class1 = wallpaperManager.getClass();//获取类名
             Method setWallPaperMethod = class1.getMethod("setBitmapToLockWallpaper", Bitmap.class);
             //获取设置锁屏壁纸的函数
             setWallPaperMethod.invoke(wallpaperManager, bitmap);
             //调用锁屏壁纸的函数，并指定壁纸的路径imageFilesPath
-            if (BuildConfig.DEBUG) Log.d("MyDaemonService", "setLockScreenPaperSuccess");
+            if (BuildConfig.DEBUG) Log.d(TAG, "setLockScreenPaperSuccess");
         } catch (Throwable e) {
             e.printStackTrace();
         }
     }
 
-    private String getPreference(String key,String value) {
+    private String getPreference(String key, String value) {
         SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         return mSharedPreferences.getString(key, value);
     }
@@ -234,6 +236,24 @@ public class MyDaemonService extends Service implements Constants {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(key, value);
         editor.commit();
+    }
+
+    private void saveLatestImage2Local(Bitmap bitmap) {
+        if (BuildConfig.DEBUG) Log.d(TAG, "saveLatestImage2Local");
+        File file = new File(getDir("image", 0), LastLatestImageName);
+        FileOutputStream fileOutputStream = null;
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            fileOutputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream);
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

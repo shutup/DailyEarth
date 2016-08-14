@@ -11,6 +11,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +19,9 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.ImageView;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -64,22 +68,22 @@ public class MainActivity extends AppCompatActivity implements Constants {
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
 
-
+        Bitmap bitmap = getLastLatestImagefromLocal();
+        if (bitmap != null) {
+            mPreviewImage.setImageBitmap(bitmap);
+        }
         /*
             start daemon service
          */
-        startService(new Intent(this, MyDaemonService.class));
-
+//        startService(new Intent(this, MyDaemonService.class));
         /*
             AlarmManager.ELAPSED_REALTIME_WAKEUP
          */
 //        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE) ;
-//        Intent serviceIntent = new Intent(this, MySetWallPaperIntentService.class) ; //启动service
-//        PendingIntent pendingIntent = PendingIntent.getService(this,0,serviceIntent,0) ;
-//        Intent broadIntent = new Intent(this, AlarmListener.class) ; //启动service
+//        Intent broadIntent = new Intent(this, MyDaemonService.class) ; //启动service
 //        PendingIntent pendingIntent = PendingIntent.getService(this,0,broadIntent,PendingIntent.FLAG_UPDATE_CURRENT) ;
-//        long triggerTime =  System.currentTimeMillis() ; //每隔50秒触发一次
-//        long interval = 5* 1000;
+//        long triggerTime =  SystemClock.elapsedRealtime(); //每隔50秒触发一次
+//        long interval = 50* 1000;
 //        alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,triggerTime,interval,pendingIntent);
 
         /*
@@ -89,19 +93,23 @@ public class MainActivity extends AppCompatActivity implements Constants {
         //get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 30 seconds to the calendar object
-        cal.add(Calendar.SECOND, 10 * 60 * 1000);
-        long interval = 10 * 60 * 1000;
+        cal.add(Calendar.SECOND, 60);
+        long interval = AlarmManager.INTERVAL_FIFTEEN_MINUTES;
         Intent intent = new Intent(this, MyDaemonService.class);
         intent.setAction(UpdateWallPaperAction);
         PendingIntent sender = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
+//        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
+        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, cal.getTimeInMillis(), interval, sender);
 
 
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
                 if (!isRequest) {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "beginRequest");
                     setLatestImage(himawari8API);
+                }else {
+                    if (BuildConfig.DEBUG) Log.d(TAG, "isRequesting");
                 }
             }
         });
@@ -125,6 +133,19 @@ public class MainActivity extends AppCompatActivity implements Constants {
         himawari8API = retrofit.create(Himawari8API.class);
 
         setLatestImage(himawari8API);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (BuildConfig.DEBUG) Log.d(TAG, "onDestroy");
+        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
+            mSubscription.unsubscribe();
+        }
+         /*
+            start daemon service
+         */
+        startService(new Intent(this, MyDaemonService.class));
     }
 
     private void setLatestImage(final Himawari8API himawari8API) {
@@ -155,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
                         String lastTime = getPreference(LastUpdateTime, "");
                         if (time.equalsIgnoreCase(lastTime)) {
                             if (BuildConfig.DEBUG) Log.d(TAG, "no need to update");
-                        }else {
+                        } else {
                             if (BuildConfig.DEBUG) Log.d(TAG, "need to update");
                             savePreference(LastUpdateTime, time);
                             for (int row = 0; row < scale; row++) {
@@ -196,9 +217,11 @@ public class MainActivity extends AppCompatActivity implements Constants {
                     public void call(List<Bitmap> bitmaps) {
                         try {
                             mPreviewImage.setImageBitmap(bitmaps.get(0));
-//                            mWallpaperManager.clear();
                             mWallpaperManager.suggestDesiredDimensions(screenW, screenH);
                             mWallpaperManager.setBitmap(bitmaps.get(1));
+                            saveLatestImage2Local(bitmaps.get(0));
+                            if (BuildConfig.DEBUG)
+                                Log.d(TAG, "setWallPaperSuccess");
                             reset();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -219,16 +242,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
     }
 
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (BuildConfig.DEBUG) Log.d(TAG, "onDestroy");
-        if (mSubscription != null && !mSubscription.isUnsubscribed()) {
-            mSubscription.unsubscribe();
-        }
-    }
-
-    private String getPreference(String key,String value) {
+    private String getPreference(String key, String value) {
         SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         return mSharedPreferences.getString(key, value);
     }
@@ -238,5 +252,37 @@ public class MainActivity extends AppCompatActivity implements Constants {
         SharedPreferences.Editor editor = mSharedPreferences.edit();
         editor.putString(key, value);
         editor.commit();
+    }
+
+    private void saveLatestImage2Local(Bitmap bitmap) {
+        if (BuildConfig.DEBUG) Log.d(TAG, "saveLatestImage2Local");
+        File file = new File(getDir("image", 0), LastLatestImageName);
+        FileOutputStream fileOutputStream = null;
+        if (file.exists()) {
+            file.delete();
+        }
+        try {
+            fileOutputStream = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fileOutputStream);
+            fileOutputStream.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private Bitmap getLastLatestImagefromLocal() {
+        File file = new File(getDir("image", 0), LastLatestImageName);
+        if (file.exists()) {
+            try {
+                if (BuildConfig.DEBUG) Log.d(TAG, "getLatestImagefromLocalSuccess");
+                return BitmapFactory.decodeFile(file.getCanonicalPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if (BuildConfig.DEBUG) Log.d(TAG, "getLatestImagefromLocalFail");
+        return BitmapFactory.decodeResource(getResources(), R.drawable.preview_placeholder);
     }
 }

@@ -16,4 +16,5 @@ public interface Constants {
     String EarthScale = "EarthScale";
 
     String LastUpdateTime = "LastUpdateTime";
+    String LastLatestImageName = "LatestImageName.png";
 }
