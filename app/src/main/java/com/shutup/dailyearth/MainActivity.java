@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
         //get a Calendar object with current time
         Calendar cal = Calendar.getInstance();
         // add 30 seconds to the calendar object
-        cal.add(Calendar.SECOND, 10);
+        cal.add(Calendar.SECOND, 10 * 60 * 1000);
         long interval = 10 * 60 * 1000;
         Intent intent = new Intent(this, MyDaemonService.class);
         intent.setAction(UpdateWallPaperAction);
@@ -165,7 +165,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
                                 }
                             }
                         }
-                        return Observable.empty();
+                        return Observable.just(null);
                     }
                 })
                 .map(new Func1<ResponseBody, List<Bitmap>>() {
