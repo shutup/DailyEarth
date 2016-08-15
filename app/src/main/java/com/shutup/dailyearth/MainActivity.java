@@ -20,6 +20,8 @@ import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -49,7 +51,7 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
-public class MainActivity extends AppCompatActivity implements Constants {
+public class MainActivity extends BaseActivity implements Constants {
 
     @InjectView(R.id.previewImage)
     ImageView mPreviewImage;
@@ -78,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements Constants {
 
     static boolean isRequest = false;
 
+    private ArrayList<MenuItem> mMenuItems = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,6 +88,8 @@ public class MainActivity extends AppCompatActivity implements Constants {
         ButterKnife.inject(this);
 
         initToolBar();
+
+        initSideMenus();
 
         initPreviewImage();
 
@@ -101,6 +106,20 @@ public class MainActivity extends AppCompatActivity implements Constants {
         initRetrofitService();
 
         setLatestImage(himawari8API);
+    }
+
+    private void initSideMenus() {
+        mMenuItems = new ArrayList<>();
+        mMenuItems.add(new MenuItem("捐赠",new Intent(this,DonateActivity.class)));
+        mMenuItems.add(new MenuItem("关于",new Intent(this,AboutActivity.class)));
+        mDrawerMenuList.setAdapter(new MenuListAdapter(this, mMenuItems));
+        mDrawerMenuList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                MenuItem menuItem = mMenuItems.get(position);
+                startActivity(menuItem.getIntent());
+            }
+        });
     }
 
     @Override

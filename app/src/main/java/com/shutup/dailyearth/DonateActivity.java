@@ -3,7 +3,7 @@ package com.shutup.dailyearth;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-public class DonateActivity extends AppCompatActivity {
+public class DonateActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

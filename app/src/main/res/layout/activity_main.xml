@@ -39,14 +39,19 @@
         android:layout_width="@dimen/drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#FFFFFF"
+        android:background="@color/colorPrimary"
         android:clickable="true"
         android:orientation="vertical">
-
-
+        <ImageView
+            android:layout_marginTop="40dp"
+            android:layout_marginBottom="40dp"
+            android:layout_gravity="center"
+            android:src="@drawable/earth"
+            android:layout_width="50dp"
+            android:layout_height="50dp"/>
         <ListView
             android:id="@+id/drawer_menu_list"
-            android:divider="@android:color/transparent"
+            android:divider="@android:color/white"
             android:dividerHeight="@dimen/menu_list_divider_height"
             android:layout_weight="1"
             android:layout_width="match_parent"
