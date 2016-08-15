@@ -4,8 +4,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:orientation="vertical"
     tools:context="com.shutup.dailyearth.AboutActivity">
     <include layout="@layout/toolbar"/>
+
+    <TextView
+        android:textSize="20sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="本项目为开源项目，希望有钱的捧个钱场，没钱的点个star!"/>
+
+    <ImageView
+        android:background="@android:color/white"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:src="@drawable/zhifubao"/>
 </LinearLayout>
 

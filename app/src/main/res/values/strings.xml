@@ -4,4 +4,8 @@
     <string name="dstTimePatttern">yyyy/MM/dd/HHmmss</string>
     <string name="drawer_open">drawer_open</string>
     <string name="drawer_close">drawer_close</string>
+    <string name="usageInfo"><![CDATA[ <b>使用说明：</b>本APP本身没什么难点，使用过程中主要需要注意的就是，尽量保持APP不被系统杀死，比如在MIUI系统，可以考虑关闭神隐模式，同时在后台锁定APP，保持前台服务在通知栏可以一直存活。<br><b>更新机制：</b>APP每隔大概15分钟会向日本的服务器请求一次数据，如果有更新的数据，那么会进行下载，同时缓存起来，方便没有更新的数据时进行展示。]]></string>
+    <string name="menu_title_usage">使用说明</string>
+    <string name="menu_title_donate">捐赠</string>
+    <string name="menu_title_about">关于</string>
 </resources>

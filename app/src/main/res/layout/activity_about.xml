@@ -4,7 +4,31 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:orientation="vertical"
     tools:context="com.shutup.dailyearth.AboutActivity">
+
     <include layout="@layout/toolbar"/>
+
+    <TextView
+        android:textSize="25sp"
+        android:text="APP作者:"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:textSize="25sp"
+        android:autoLink="email|phone|web"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="fyjc999@gmail.com"/>
+    <TextView
+        android:textSize="25sp"
+        android:text="项目地址:"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+    <TextView
+        android:textSize="25sp"
+        android:autoLink="email|phone|web"
+        android:text="https://github.com/shutup/DailyEarth"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>

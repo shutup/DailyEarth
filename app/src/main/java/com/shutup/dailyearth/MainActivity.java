@@ -110,8 +110,9 @@ public class MainActivity extends BaseActivity implements Constants {
 
     private void initSideMenus() {
         mMenuItems = new ArrayList<>();
-        mMenuItems.add(new MenuItem("捐赠",new Intent(this,DonateActivity.class)));
-        mMenuItems.add(new MenuItem("关于",new Intent(this,AboutActivity.class)));
+        mMenuItems.add(new MenuItem(getString(R.string.menu_title_donate),new Intent(this,DonateActivity.class)));
+        mMenuItems.add(new MenuItem(getString(R.string.menu_title_about),new Intent(this,AboutActivity.class)));
+        mMenuItems.add(new MenuItem(getString(R.string.menu_title_usage),new Intent(this,UsageActivity.class)));
         mDrawerMenuList.setAdapter(new MenuListAdapter(this, mMenuItems));
         mDrawerMenuList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

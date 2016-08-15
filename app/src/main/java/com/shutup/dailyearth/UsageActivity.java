@@ -1,25 +1,29 @@
 package com.shutup.dailyearth;
 
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.*;
+import android.text.Html;
 import android.widget.TextView;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 
-public class AboutActivity extends BaseActivity {
+public class UsageActivity extends AppCompatActivity {
 
     @InjectView(R.id.toolbar_title)
     TextView mToolbarTitle;
     @InjectView(R.id.toolbar)
     Toolbar mToolbar;
+    @InjectView(R.id.info)
+    TextView mInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_about);
+        setContentView(R.layout.activity_usage);
         ButterKnife.inject(this);
+        mInfo.setText(Html.fromHtml(getString(R.string.usageInfo)));
         initToolBar();
     }
 
@@ -29,7 +33,7 @@ public class AboutActivity extends BaseActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle("");
         }
-        mToolbarTitle.setText(R.string.menu_title_about);
+        mToolbarTitle.setText(R.string.menu_title_usage);
     }
 
     @Override
