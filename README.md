@@ -14,7 +14,7 @@
 
 ##捐赠项目
 有钱的捧个钱场，没钱的捧个人场！
-![zhifubao](https://github.com/shutup/DailyEarth/blob/master/zhifubao.jpg)
+![zhifubao](https://github.com/shutup/DailyEarth/blob/master/zhifubao.png)
 
 ##截图
 ![screen](https://github.com/shutup/DailyEarth/blob/master/device-2016-08-14-081422.png)
