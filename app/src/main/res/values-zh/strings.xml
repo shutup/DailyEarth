@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">今日地球</string>
+    <string name="app_name">蜉蝣地球</string>
     <string name="originTimePattern">yyyy-MM-dd HH:mm:ss</string>
     <string name="dstTimePatttern">yyyy/MM/dd/HHmmss</string>
     <string name="menu_title_about">关于</string>
