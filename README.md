@@ -12,10 +12,6 @@
 * ~~优化更新逻辑~~
 * 配置功能
 
-##捐赠项目
-有钱的捧个钱场，没钱的捧个人场！
-![zhifubao](https://github.com/shutup/DailyEarth/blob/master/zhifubao.png)
-
 ##截图
 ![screen](https://github.com/shutup/DailyEarth/blob/master/device-2016-08-14-081422.png)
 ##使用的技术
