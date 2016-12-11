@@ -16,7 +16,6 @@
         android:layout_height="wrap_content"/>
     <TextView
         android:textSize="25sp"
-        android:autoLink="email|phone|web"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="fyjc999@gmail.com"/>
